@@ -36,11 +36,11 @@ router.get('/:id', (req, res) => {
 
 router.get('/:id/comments', (req, res) => {
     findPostComments(req.params.id)
-        .then(comments => {
-            if (!comments){
+        .then(post => {
+            if (!post){
                 res.status(404).json({ message: "The post with the specified ID does not exist." })
             } else { 
-                res.status(200).json(comments)
+                res.status(200).json(post)
             }
         })
         .catch(err => {
@@ -48,4 +48,51 @@ router.get('/:id/comments', (req, res) => {
         })
 })
 
+router.post('/', (req, res) => {
+    if (!req.body.title || !req.body.contents){
+        res.status(400).json({ errorMessage: "Please provide title and contents for the post." })
+    } else {
+        insert(req.body)
+            .then(post => {
+                res.status(201).json(post)
+            })
+            .catch(err => {
+                console.log('error with the request: ', req.body)
+                res.status(500).json({ error: "There was an error while saving the post to the database" })
+            })
+    }
+})
+
+router.post('/:id/comments', async (req, res) => {
+    const post_id = parseInt(req.params.id)
+    const posts = await find()
+    const post = posts.filter(post => post.id == post_id)
+    if (!post[0]) {
+        res.status(404).json( { message: "The post with the specified ID does not exist." })
+    } else {
+        if (!req.body.text) {
+            res.status(400).json({ errorMessage: "Please provide text for the comment." })
+        } else {
+            const newComment = {
+                text: req.body.text,
+                post_id: post_id
+            }
+            insertComment(newComment)
+            .then( post => {   
+                findCommentById(post.id)
+                .then(comment => {
+                    res.status(201).json(comment)
+                })
+                .catch(err => {
+                    console.log('err: ', err)
+                    res.status(500).json({ error: "There was an error while reading the new comment from the database" })
+                })
+            })
+            .catch(err => {
+                res.status(500).json({ error: "There was an error while saving the post to the database" })
+            })        
+        }
+    }
+})
+               
 module.exports = router
