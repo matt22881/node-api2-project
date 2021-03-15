@@ -78,21 +78,66 @@ router.post('/:id/comments', async (req, res) => {
                 post_id: post_id
             }
             insertComment(newComment)
-            .then( post => {   
-                findCommentById(post.id)
-                .then(comment => {
-                    res.status(201).json(comment)
+                .then( post => {   
+                    findCommentById(post.id)
+                        .then(comment => {
+                            res.status(201).json(comment)
+                        })
+                        .catch(err => {
+                            console.log('err: ', err)
+                            res.status(500).json({ error: "There was an error while reading the new comment from the database" })
+                        })
                 })
                 .catch(err => {
-                    console.log('err: ', err)
-                    res.status(500).json({ error: "There was an error while reading the new comment from the database" })
-                })
-            })
-            .catch(err => {
-                res.status(500).json({ error: "There was an error while saving the post to the database" })
-            })        
+                    res.status(500).json({ error: "There was an error while saving the post to the database" })
+                })        
         }
     }
 })
-               
+             
+router.delete('/:id', async (req, res) => {
+    const post_id = parseInt(req.params.id)
+    const posts = await find()
+    const post = posts.filter(post => post.id == post_id)
+    if (!post[0]) {
+        res.status(404).json({ message: "The post with the specified ID does not exist." })
+    } else {
+        remove(post_id)
+            .then(resp => {
+                res.status(204).json({message: "record deleted"})
+            })
+            .catch(err => {
+                res.status(500).json({ error: "The post could not be removed" })
+            })
+    }
+        
+})
+
+router.put('/:id', async (req, res) => {
+    const post_id = parseInt(req.params.id)
+    const posts = await find()
+    const post = posts.filter(post => post.id == post_id)
+    if (!post[0]) {
+        res.status(404).json({ message: "The post with the specified ID does not exist." })
+    } else if (!req.body.title || !req.body.contents){
+        res.status(400).json({ errorMessage: "Please provide title and contents for the post." })
+    } else {
+        update(post_id, req.body)
+        .then(updated => {
+            if (updated === 1){
+                findById(post_id)
+                    .then(post => {
+                        res.status(204).json(post)
+                    })
+                    .catch(err => {
+                        res.status(500).json({ error: "The updated post information could not be retrieved." })
+                    })
+            }
+        })
+        .catch((err) => {
+            res.status(500).json({ error: "The post information could not be modified." })
+        })
+    }
+})
+
 module.exports = router
