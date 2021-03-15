@@ -7,5 +7,5 @@ const PORT = process.env.PORT || 5555
 server.use(cors())
 
 server.listen(PORT, () => {
-    console.log(`API Server listening on port ${PORT}`)
+    console.log(`\n\n --- API Server listening on port ${PORT} --- \n\n`)
 })
